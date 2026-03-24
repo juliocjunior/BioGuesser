@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BioGuesser | Enigma Biomecânico</title>
+    <style>
+      :root {
+        --bg-color: #121214;
+        --panel-bg: #202024;
+        --text-main: #e1e1e6;
+        --accent: #04d361;
+        --accent-hover: #04bf58;
+        --error: #f75a68;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        background-color: var(--panel-bg);
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        max-width: 600px;
+        width: 100%;
+        text-align: center;
+      }
+      h1 {
+        color: var(--accent);
+        margin-bottom: 5px;
+      }
+      .subtitle {
+        font-size: 0.9em;
+        color: #8d8d99;
+        margin-bottom: 30px;
+      }
+      .riddle-box {
+        background-color: #29292e;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: left;
+        margin-bottom: 25px;
+        border-left: 4px solid var(--accent);
+        line-height: 1.6;
+      }
+      input[type="text"] {
+        width: 80%;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        background-color: #121214;
+        color: var(--text-main);
+        font-size: 16px;
+        margin-bottom: 15px;
+        outline: none;
+      }
+      input[type="text"]:focus {
+        border: 1px solid var(--accent);
+      }
+      button {
+        background-color: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background-color: var(--accent-hover);
+      }
+      #feedback {
+        margin-top: 15px;
+        font-weight: bold;
+        min-height: 20px;
+      }
+      .success {
+        color: var(--accent);
+      }
+      .wrong {
+        color: var(--error);
+      }
+      .video-container {
+        margin-top: 20px;
+        display: none;
+      }
+      iframe {
+        width: 100%;
+        height: 315px;
+        border-radius: 8px;
+        border: none;
+      }
+      .next-btn {
+        background-color: #8257e5;
+        margin-top: 15px;
+        display: none;
+      }
+      .next-btn:hover {
+        background-color: #9466ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>BioGuesser 🎯</h1>
+      <div class="subtitle">Decifre o movimento através da biomecânica</div>
+
+      <div class="riddle-box" id="riddle-text"></div>
+
+      <input
+        type="text"
+        id="guess-input"
+        placeholder="Qual é o movimento/esporte?" />
+      <br />
+      <button id="submit-btn" onclick="checkGuess()">Validar Palpite</button>
+
+      <div id="feedback"></div>
+
+      <div class="video-container" id="video-box">
+        <h3 id="answer-title"></h3>
+        <iframe id="video-frame" src="about:blank" allowfullscreen></iframe>
+        <button class="next-btn" id="next-btn" onclick="nextRiddle()">
+          Próximo Enigma ➔
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Banco de Dados da Fase 1
+      const riddles = [
+        {
+          text: "<b>Plano:</b> Sagital<br><b>Articulações:</b> Coxofemoral, Tibiofemoral e Talocrural.<br><b>Ações:</b> Flexão excêntrica e Extensão concêntrica de quadril e joelho.<br><b>Cadeia:</b> Fechada.",
+          keywords: ["agachamento", "squat"],
+          answerName: "Agachamento Livre",
+          videoSrc: "https://www.youtube.com/embed/gcNh17Ckjgg",
+        },
+        {
+          text: "<b>Plano:</b> Sagital<br><b>Articulações:</b> Glenoumeral e Umeroulnar.<br><b>Ações:</b> Extensão de ombro, flexão de cotovelo e retração escapular.<br><b>Cadeia:</b> Aberta.",
+          keywords: ["remada", "costas", "remar"],
+          answerName: "Remada Baixa",
+          videoSrc: "https://www.youtube.com/embed/GZbfZ033f74",
+        },
+        {
+          text: "<b>Plano:</b> Sagital<br><b>Articulações:</b> Coxofemoral e Tibiofemoral.<br><b>Ações:</b> Flexão vigorosa do quadril com extensão explosiva do joelho.<br><b>Cadeia:</b> Aberta.",
+          keywords: ["chute", "futebol", "chutar"],
+          answerName: "Chute Frontal no Futebol",
+          videoSrc: "https://www.youtube.com/embed/xSybTqA-B_U",
+        },
+      ];
+
+      let currentRiddle = 0;
+
+      function loadRiddle() {
+        document.getElementById("riddle-text").innerHTML =
+          riddles[currentRiddle].text;
+        document.getElementById("guess-input").value = "";
+        document.getElementById("feedback").innerHTML = "";
+        document.getElementById("video-box").style.display = "none";
+        document.getElementById("next-btn").style.display = "none";
+        document.getElementById("submit-btn").style.display = "inline-block";
+        document.getElementById("guess-input").disabled = false;
+      }
+
+      function checkGuess() {
+        const userGuess = document
+          .getElementById("guess-input")
+          .value.toLowerCase()
+          .trim();
+        const feedback = document.getElementById("feedback");
+        const currentData = riddles[currentRiddle];
+
+        // Verifica se o input do usuário contém alguma das palavras-chave
+        const isCorrect = currentData.keywords.some((keyword) =>
+          userGuess.includes(keyword),
+        );
+
+        if (userGuess === "") {
+          feedback.innerHTML = "<span class='wrong'>Digite um palpite!</span>";
+          return;
+        }
+
+        if (isCorrect) {
+          feedback.innerHTML =
+            "<span class='success'>Análise Correta! Você desvendou o movimento!</span>";
+          document.getElementById("answer-title").innerText =
+            currentData.answerName;
+          document.getElementById("video-frame").src = currentData.videoSrc;
+          document.getElementById("video-box").style.display = "block";
+
+          document.getElementById("submit-btn").style.display = "none";
+          document.getElementById("guess-input").disabled = true;
+
+          // Mostra botão de próximo se não for o último
+          if (currentRiddle < riddles.length - 1) {
+            document.getElementById("next-btn").style.display = "inline-block";
+          } else {
+            feedback.innerHTML += "<br><b>Fim de jogo! Você gabaritou!</b>";
+          }
+        } else {
+          feedback.innerHTML =
+            "<span class='wrong'>Incorreto. Revise os eixos e articulações e tente novamente!</span>";
+        }
+      }
+
+      function nextRiddle() {
+        currentRiddle++;
+        loadRiddle();
+      }
+
+      // Carrega o primeiro enigma ao abrir a página
+      window.onload = loadRiddle;
+    </script>
+  </body>
+</html>
